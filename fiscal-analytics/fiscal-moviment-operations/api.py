@@ -11,6 +11,7 @@ from auth.config import TOKEN
 
 # === CONFIGURAÇÕES DA API ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/operation-fiscal-movement/search"
+
 headers = {
     "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
@@ -27,9 +28,9 @@ print("🚀 Iniciando consulta de Operações (Analytics + DEBUG)...")
 while True:
     payload = {
         "filter": {
-            "branchCodeList": [3,5,7],
-            "startMovementDate": "2025-01-01T00:00:00Z",
-            "endMovementDate": "2025-11-30T00:00:00Z",
+            "branchCodeList": [2,3,5,7],
+            "startMovementDate": "2025-08-01T00:00:00Z",
+            "endMovementDate": "2025-12-30T00:00:00Z",
         },
         "page": page,
         "pageSize": page_size,
