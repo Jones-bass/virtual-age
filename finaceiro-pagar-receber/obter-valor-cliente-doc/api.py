@@ -28,13 +28,12 @@ print("🚀 Consultando documentos de contas a receber...")
 payload = {
     "filter": {
         "change": {
-            "startDate": "2025-10-01T00:00:00Z",
-            "endDate": "2025-12-31T23:59:59Z",
+            "startDate": "2025-12-01T00:00:00Z",
+            "endDate": "2025-12-09T23:59:59Z",
             "inCheck": True
         },
-        "branchCodeList": [2],
-        "customerCodeList": [575],
-        "statusList": [1],
+        "branchCodeList": [5],
+        "statusList": [1,2,3,4,5,6,7,8,9],
         "hasOpenInvoices": True,
     },
     "page": 1,

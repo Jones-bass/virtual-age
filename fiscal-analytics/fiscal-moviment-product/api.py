@@ -28,8 +28,8 @@ while True:
     payload = {
         "filter": {
                "branchCodeList": [5],
-                "startMovementDate": "2025-09-01T00:00:00Z",
-                "endMovementDate": "2025-09-30T23:59:59Z",
+                "startMovementDate": "2025-12-01T00:00:00Z",
+                "endMovementDate": "2025-12-09T23:59:59Z",
         },
         "option": {
             "classificationTypeCodeList": [102]

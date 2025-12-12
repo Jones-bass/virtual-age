@@ -27,9 +27,9 @@ print("🚀 Iniciando consulta de Entidades Genéricas (Analytics + DEBUG)...")
 while True:
     payload = {
         "filter": {
-            "branchCodeList": 2,
-            "startMovementDate": "2025-09-01T00:00:00Z",
-            "endMovementDate": "2025-09-30T00:00:00Z",
+            "branchCodeList": [5],
+            "startMovementDate": "2025-12-01T00:00:00Z",
+            "endMovementDate": "2025-12-09T00:00:00Z",
         },
         "page": page,
         "pageSize": page_size,
