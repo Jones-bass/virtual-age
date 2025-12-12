@@ -28,8 +28,8 @@ params = {
     # "BranchCnpj": "45877608000218",#CJ
      "BranchCnpj": "45877608000137", #MG
     # "BranchCnpj": "41791600000526",  # ECOM
-    "StartDate": "2025-10-01T00:00:00Z",
-    "EndDate": "2025-10-31T23:59:59Z",
+    "StartDate": "2025-12-01T00:00:00Z",
+    "EndDate": "2025-12-09T23:59:59Z",
     "pageSize": page_size
 }
 

@@ -4,7 +4,6 @@ import json
 from datetime import datetime
 import sys
 import os
-import time # Mantido, caso queira adicionar paginação
 
 # === IMPORTA TOKEN DE AUTH ===
 # Assumindo que o path está correto
@@ -37,7 +36,10 @@ payload = {
             "branchInfoCodeList": [1],
         },
         "classifications": [
-            {"type": 104, "codeList": ["001","002","003","004","005","006"]}
+            {
+                "type": 104, 
+                "codeList": ["001","002","003","004","005","006"]
+                }
         ],
         "branchInfo": {"branchCode": 1, "isActive": True},
     },

@@ -11,7 +11,6 @@ from auth.config import TOKEN
 
 # === FUNÇÃO AUXILIAR ===
 def safe_list(value):
-    """Garante que o retorno seja sempre uma lista."""
     return value if isinstance(value, list) else []
 
 # === CONFIGURAÇÕES ===
