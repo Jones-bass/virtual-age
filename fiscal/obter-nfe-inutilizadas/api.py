@@ -26,9 +26,9 @@ page_size = 100
 
 while True:
     params = {
-        "StartDate": "2022-01-01T00:00:00Z",  # ajuste conforme necessário
+        "StartDate": "2025-01-01T00:00:00Z",  # ajuste conforme necessário
         "EndDate": "2025-12-31T23:59:59Z",
-        "BranchCodeList": [1],                # lista de empresas a consultar
+        "BranchCodeList": [5,7],                # lista de empresas a consultar
         "Page": page,
         "PageSize": page_size,
         "Order": "branchCode,-maxChangeFilterDate"
