@@ -27,8 +27,8 @@ print("🚀 Iniciando consulta de Vendas por Classificação de Produto (com DEB
 while True:
     payload = {
         "branchs": [5],
-        "datemin": "2025-09-01T00:00:00Z",
-        "datemax": "2025-09-30T23:59:59Z",
+        "datemin": "2025-12-01T00:00:00Z",
+        "datemax": "2025-12-14T23:59:59Z",
         "classification_type_code": "102", 
         "page": page,
         "pageSize": page_size

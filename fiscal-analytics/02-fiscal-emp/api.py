@@ -10,7 +10,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 from auth.config import TOKEN
 
 # === CONFIGURAÇÕES DA API ===
-URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/branch-fiscal-movement/search"
+URL = "https://treino.bhan.com.br:9443/api/totvsmoda/analytics/v2/branch-fiscal-movement/search"
+
 headers = {
     "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
@@ -28,8 +29,8 @@ while True:
     payload = {
         "filter": {
             "branchCodeList": [3],
-            "startMovementDate": "2025-09-01T00:00:00Z",
-            "endMovementDate": "2025-09-30T00:00:00Z",
+            "startMovementDate": "2025-12-01T00:00:00Z",
+            "endMovementDate": "2025-12-30T00:00:00Z",
         },
     }
 

@@ -1,9 +1,9 @@
 import requests
 import pandas as pd
-from datetime import datetime, timezone
 import json
 import sys
 import os
+from datetime import datetime
 
 # === IMPORTA TOKEN ===
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
@@ -11,123 +11,118 @@ from auth.config import TOKEN
 
 # === CONFIGURAÇÕES DA API ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/fiscal-movement/search"
+
 headers = {
     "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
 }
 
 # === PAGINAÇÃO ===
-page = 1
-page_size = 1000
-all_movements = []
-all_summaries = []
+page = 1  # Primeira página
+page_size = 100  # Tamanho da página
+all_movements = []  # Para armazenar todos os dados
+all_summaries = []  # Para armazenar os resumos das páginas
 
-print("🚀 Iniciando consulta Fiscal Movement (Analytics FULL)…")
+print("🚀 Iniciando consulta de Movimentos Fiscais (Analytics + DEBUG)...")
 
 while True:
-
-    # === PAYLOAD COMPLETO (traz tudo) ===
     payload = {
-        "filter": {
+          "filter": {
             "branchCodeList": [5],  
             
             # === INTERVALO DE DATAS ===
-            "startMovementDate": "2025-10-01T00:00:00Z",
-            "endMovementDate": "2025-10-30T23:59:59Z",
+            "startMovementDate": "2025-12-01T00:00:00Z",
+            "endMovementDate": "2025-12-16T23:59:59Z",
         },
         "page": page,
         "pageSize": page_size,
     }
 
-    print(f"\n📄 Consultando página {page}…")
+    print(f"\n📄 Consultando página {page + 1} de movimentos fiscais…")
     resp = requests.post(URL, headers=headers, json=payload)
-    print(f"📡 Status HTTP: {resp.status_code}")
+    print(f"📡 Status: {resp.status_code}")
 
     if resp.status_code != 200:
-        print("❌ Erro:", resp.text)
+        print("❌ Erro na requisição:", resp.text)
         break
 
     try:
         data = resp.json()
-    except:
-        print("❌ Erro ao interpretar JSON da resposta.")
+    except requests.exceptions.JSONDecodeError:
+        print("❌ Erro ao decodificar JSON da resposta.")
         break
 
-    # === DEBUG: salvar resposta ===
-    debug_file = f"debug_fiscal_movement_page_{page}.json"
+    # === DEBUG: SALVAR RESPOSTA ===
+    debug_file = f"debug_response_fiscal_movement_page_{page + 1}.json"
     with open(debug_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"💾 Armazenado: {debug_file}")
+    print(f"💾 Resposta salva em: {debug_file}")
 
-    # === VERIFICA DADOS ===
+    # === PROCESSAMENTO DE DADOS ===
     items = data.get("items", [])
-
-    # Caso venha somente o objeto fictício zerado
-    if len(items) == 1 and items[0].get("branchCode") == 0:
-        print("⚠️ A API retornou objeto placeholder (dados zerados).")
-        print("   Isso indica que o filtro não trouxe dados reais.")
-        break
-
     if not items:
-        print("⚠️ Nenhum movimento real encontrado nesta página.")
+        print("⚠️ Nenhum registro encontrado nesta página.")
         break
 
-    # === CARREGAR MOVIMENTOS ===
     for item in items:
-        # Verificando se a operação 151 está presente
-        if item.get("operationCode") == "151":
-            print(f"⚠️ Operação 151 encontrada: {item}")  # Log para verificar a operação
-
         all_movements.append({
-            "Filial": item.get("branchCode"),
-            "Produto": item.get("productCode"),
-            "Pessoa": item.get("personCode"),
-            "Representante": item.get("representativeCode"),
-            "DataMovimento": item.get("movementDate"),
-            "Operacao": item.get("operationCode"),
-            "ModeloOperacao": item.get("operationModel"),
-            "Estoque": item.get("stockCode"),
-            "Comprador": item.get("buyerCode"),
-            "Vendedor": item.get("sellerCode"),
-            "ValorBruto": item.get("grossValue"),
-            "ValorDesconto": item.get("discountValue"),
-            "ValorLiquido": item.get("netValue"),
-            "Quantidade": item.get("quantity"),
+            "BranchCode": item.get("branchCode"),
+            "ProductCode": item.get("productCode"),
+            "PersonCode": item.get("personCode"),
+            "RepresentativeCode": item.get("representativeCode"),
+            "MovementDate": item.get("movementDate"),
+            "OperationCode": item.get("operationCode"),
+            "OperationModel": item.get("operationModel"),
+            "StockCode": item.get("stockCode"),
+            "BuyerCode": item.get("buyerCode"),
+            "SellerCode": item.get("sellerCode"),
+            "GrossValue": item.get("grossValue"),
+            "DiscountValue": item.get("discountValue"),
+            "NetValue": item.get("netValue"),
+            "Quantity": item.get("quantity"),
         })
 
-    # === RESUMO ===
+    # Resumo da página
     summary = {
-        "Page": page,
+        "Page": page + 1,
         "Count": data.get("count"),
         "TotalItems": data.get("totalItems"),
         "TotalPages": data.get("totalPages"),
-        "HasNext": data.get("hasNext")
     }
     all_summaries.append(summary)
 
     # === PAGINAÇÃO ===
-    total_pages = data.get("totalPages", 0)
+    total_pages = data.get("totalPages")
     has_next = data.get("hasNext", False)
 
-    if not has_next or page >= total_pages:
-        print("✅ Fim da paginação.")
+    if total_pages and page >= total_pages - 1:
+        print("✅ Todas as páginas foram processadas.")
+        break
+    elif not has_next or len(items) < page_size:
+        print("✅ Última página (sem próxima).")
         break
 
     page += 1
 
-# === EXPORTAÇÃO DOS RESULTADOS ===
+# === EXPORTAÇÃO ===
 df_movements = pd.DataFrame(all_movements)
-df_summary = pd.DataFrame(all_summaries)
+df_summary = pd.DataFrame(all_summaries).drop_duplicates(subset=["Page"])
 
-print("\n" + "-" * 50)
+print("-" * 40)
 
 if df_movements.empty:
-    print("⚠️ Nenhum dado encontrado para salvar no Excel.")
+    print("⚠️ Nenhum dado encontrado para exportar.")
 else:
-    excel_file = "movimentos_fiscais_full.xlsx"
-    with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
-        df_movements.to_excel(writer, sheet_name="Movimentos", index=False)
-        df_summary.to_excel(writer, sheet_name="Resumo", index=False)
+    date_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    excel_file = f"movimentos_fiscais_{date_now}.xlsx"
 
-    print(f"📊 Arquivo gerado com sucesso: {excel_file}")
-    print(f"Total de registros coletados: {len(df_movements)}")
+    try:
+        with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+            df_movements.to_excel(writer, sheet_name="Movimentos Fiscais", index=False)
+            if not df_summary.empty:
+                df_summary.to_excel(writer, sheet_name="ResumoPáginas", index=False)
+
+        print(f"✅ Relatório gerado: {excel_file}")
+        print(f"Total de registros exportados: {len(df_movements)}")
+    except Exception as e:
+        print(f"❌ Erro ao exportar para Excel: {e}")

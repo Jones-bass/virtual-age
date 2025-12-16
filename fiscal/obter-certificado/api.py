@@ -19,7 +19,7 @@ HEADERS = {
 }
 
 PARAMS = {
-    "BranchCode": 1,               # Código da empresa
+    "BranchCode": 7,               # Código da empresa
     "EnviromentType": "Official"   # Pode ser "Official" ou "Statement"
 }
 
