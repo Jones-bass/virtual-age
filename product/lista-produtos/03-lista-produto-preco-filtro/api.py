@@ -32,24 +32,24 @@ print("🚀 Consultando preços de produtos...")
 payload = {
     "filter": {
         "change": {
-            "startDate": "2025-09-01T00:00:00Z",
+            "startDate": "2023-09-01T00:00:00Z",
             "endDate": "2025-09-30T23:59:59Z",
             "inBranchInfo": True,
             "branchInfoCodeList": [1],
         },
-        "classifications": [
-            {"type": 104, "codeList": ["001","002","003","004","005","006"]}
-        ],
-        "branchInfo": {"branchCode": 1, "isActive": True},
+     
+        "branchInfo": {
+            "branchCode": 1, 
+            "isActive": True,
+            "isFinishedProduct": True
+            },
     },
         
     "option": {
         "prices": [
             {
                 "branchCode": 1,        
-                "priceCodeList": [1],     
-                "isPromotionalPrice": True,
-                "isScheduledPrice": True
+                "priceCodeList": [1, 2]
             }
         ],
     },

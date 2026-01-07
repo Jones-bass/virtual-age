@@ -8,7 +8,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 from auth.config import TOKEN
 
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/product/v2/kardex-movement"
@@ -21,12 +21,12 @@ headers = {
 print("🚀 Iniciando consulta paralela de movimentação de estoque (Kardex)...")
 
 # === LISTA DE PRODUTOS ===
-product_codes = list(range(1, 99))
-branch_code = 2
+product_codes = list(range(5112, 5113))
+branch_code = 1
 
 # === INTERVALO DE DATAS ===
-start_date = "2025-10-30T00:00:00Z"
-end_date = "2025-10-31T23:59:59Z"
+start_date = "2025-01-01T00:00:00Z"
+end_date = "2025-12-31T23:59:59Z"
 
 # === FUNÇÃO PARA CONSULTAR UM PRODUTO ===
 def consultar_produto(code):
