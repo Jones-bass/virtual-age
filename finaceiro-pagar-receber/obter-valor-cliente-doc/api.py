@@ -28,8 +28,8 @@ print("🚀 Consultando documentos de contas a receber...")
 payload = {
     "filter": {
         "change": {
-            "startDate": "2025-12-01T00:00:00Z",
-            "endDate": "2025-12-09T23:59:59Z",
+            "startDate": "2026-01-01T00:00:00Z",
+            "endDate": "2026-01-13T23:59:59Z",
             "inCheck": True
         },
         "branchCodeList": [5],

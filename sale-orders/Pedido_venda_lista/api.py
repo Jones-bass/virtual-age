@@ -1,3 +1,4 @@
+
 import requests
 from datetime import datetime, timezone
 import pandas as pd
@@ -9,117 +10,112 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from auth.config import TOKEN
 
-# === CONFIGURAÇÕES DA API ===
+# Configurações de API
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/sales-order/v2/orders/search"
 HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
     "Content-Type": "application/json"
 }
 
+# Variáveis de controle
 page = 1
-page_size = 200
+page_size = 200  # Número de itens por página
 all_items = []
 
+# Loop de requisições
 while True:
     payload = {
         "filter": {
-            "change": {
-                "startDate": "2025-01-01T00:00:00Z",
-                "endDate": "2025-10-26T23:59:59Z",
-            },
-            "branchCodeList": [2],  # ajuste conforme sua filial
+      
+            "startOrderDate": "2025-10-01T00:00:00Z",
+            "endOrderDate": "2025-10-31T23:59:59Z",
+            "orderCodeList": [3075],  # Remover filtro de código de pedido específico
+            "branchCodeList": [3],  # Ajustar conforme sua filial
         },
+        "page": page,
+        "pageSize": page_size
     }
 
     resp = requests.post(URL, headers=HEADERS, json=payload)
-    print(f"\n📄 Página {page} | Status: {resp.status_code}")
+    print(f"Página {page} | Status: {resp.status_code}")
 
+    # Verificação de resposta da API
     if resp.status_code != 200:
-        print("❌ Erro na requisição:", resp.text)
+        print(f"Erro na requisição: {resp.text}")
         break
 
     data = resp.json()
 
-    # === DEBUG: salvar JSON cru para inspeção se necessário ===
+    # Salvando JSON para debug
     debug_file = f"debug_orders_page_{page}.json"
     with open(debug_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"💾 JSON cru salvo em: {debug_file}")
+    print(f"💾 JSON salvo em: {debug_file}")
 
     orders = data.get("items", [])
     if not orders:
         print("⚠️ Nenhum pedido encontrado nesta página.")
         break
 
+    # Processar pedidos encontrados
     for order in orders:
-        # ⚡ Status original direto da API
         status = order.get("statusOrder")
+        
+        # Garantir que o campo invoices seja uma lista
+        invoices = order.get("invoices", [])
+        if invoices is None:  # Caso não exista, defina como lista vazia
+            invoices = []
 
-        all_items.append({
-            "Filial": order.get("branchCode"),
-            "Pedido": order.get("orderCode"),
-            "OrderID": order.get("orderId"),
-            "CustomerOrderCode": order.get("customerOrderCode"),
-            "DataInsercao": order.get("insertDate"),
-            "DataPedido": order.get("orderDate"),
-            "DataChegada": order.get("arrivalDate"),
-            "DataUltimaAlteracao": order.get("maxChangeFilterDate"),
-            "Cliente": order.get("customerName"),
-            "CPF_CNPJ_Cliente": order.get("customerCpfCnpj"),
-            "CodigoCliente": order.get("customerCode"),
-            "Representante": order.get("representativeName"),
-            "CodigoRepresentante": order.get("representativeCode"),
-            "Operacao": order.get("operationName"),
-            "CodigoOperacao": order.get("operationCode"),
-            "CondicaoPagamento": order.get("paymentConditionName"),
-            "CodigoCondicaoPagamento": order.get("paymentConditionCode"),
-            "Quantidade": order.get("quantity"),
-            "ValorBruto": order.get("grossValue"),
-            "ValorDesconto": order.get("discountValue"),
-            "ValorLiquido": order.get("netValue"),
-            "ValorFrete": order.get("freightValue"),
-            "TipoFrete": order.get("freightType"),
-            "CodigoTransportadora": order.get("shippingCompanyCode"),
-            "NomeTransportadora": order.get("shippingCompanyName"),
-            "StatusPedido": status,  # ✅ pega exatamente da API
-            "TotalPedido": order.get("totalAmountOrder"),
-            "Experiencia": order.get("experienceType"),
-            "TemTransacaoPDV": order.get("hasPdvTransaction"),
-            "TemFinanceiroProcessado": order.get("hasFinancialProcessed"),
-            "CodigoIntegracao": order.get("integrationCode"),
-            "CodigoGuia": order.get("guideCode"),
-            "CPF_CNPJGuia": order.get("guideCpfCnpj"),
-            "VendedorCodigo": order.get("sellerCode"),
-            "VendedorCPF_CNPJ": order.get("sellerCpfCnpj"),
-        })
+        for invoice in invoices:
+            all_items.append({
+                "Filial": order.get("branchCode"),
+                "Pedido": order.get("orderCode"),
+                "OrderID": order.get("orderId"),
+                "CustomerOrderCode": order.get("customerOrderCode"),
+                "DataPedido": order.get("orderDate"),
+                "StatusPedido": status,
+                "Quantidade": order.get("quantity"),
+                "ValorBruto": order.get("grossValue"),
+                "ValorLiquido": order.get("netValue"),
+                "ValorFrete": order.get("freightValue"),
+                "NomeTransportadora": order.get("shippingCompanyName"),
+                "TotalPedido": order.get("totalAmountOrder"),
+                "Experience": order.get("experienceType"),
+                "InvoiceAccessKey": invoice.get("accessKey"),
+                "InvoiceCode": invoice.get("code"),
+                "InvoiceSerial": invoice.get("serial"),
+                "InvoiceStatus": invoice.get("status"),
+                "InvoiceTotalValue": invoice.get("totalValue"),
+                "InvoiceShippingValue": invoice.get("shippingValue"),
+                "InvoiceTransactionDate": invoice.get("transactionDate"),
+                "InvoiceTransactionCode": invoice.get("transactionCode"),
+                "InvoiceElectronicStatus": invoice.get("electronic", {}).get("electronicInvoiceStatus"),
+            })
 
+    # Verificação de próxima página
     if not data.get("hasNext", False):
         print("✅ Paginação finalizada.")
         break
 
     page += 1
 
-# === EXPORTAÇÃO PARA EXCEL COM TRATAMENTO DE DATAS E VALORES ===
+# Exportação para Excel
 df = pd.DataFrame(all_items)
-
 if df.empty:
-    print("⚠️ Nenhum registro encontrado no período.")
+    print("⚠️ Nenhum registro encontrado.")
 else:
-    # Conversão de datas apenas para colunas de data
-    date_cols = ["DataInsercao", "DataPedido", "DataChegada", "DataUltimaAlteracao"]
-    for col in date_cols:
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors="coerce")
-    
-    # Conversão de valores apenas para colunas numéricas
-    numeric_cols = ["Quantidade", "ValorBruto", "ValorDesconto", "ValorLiquido",
-                    "ValorFrete", "TotalPedido"]
-    for col in numeric_cols:
-        if col in df.columns:
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+    # Conversão de datas e valores
+    df["DataPedido"] = pd.to_datetime(df["DataPedido"], errors="coerce")
+    df["InvoiceTransactionDate"] = pd.to_datetime(df["InvoiceTransactionDate"], errors="coerce")
+    df["Quantidade"] = pd.to_numeric(df["Quantidade"], errors="coerce")
+    df["ValorBruto"] = pd.to_numeric(df["ValorBruto"], errors="coerce")
+    df["ValorLiquido"] = pd.to_numeric(df["ValorLiquido"], errors="coerce")
+    df["ValorFrete"] = pd.to_numeric(df["ValorFrete"], errors="coerce")
+    df["TotalPedido"] = pd.to_numeric(df["TotalPedido"], errors="coerce")
+    df["InvoiceTotalValue"] = pd.to_numeric(df["InvoiceTotalValue"], errors="coerce")
+    df["InvoiceShippingValue"] = pd.to_numeric(df["InvoiceShippingValue"], errors="coerce")
 
-    # StatusPedido permanece string, exatamente como vem da API
-    excel_file = "relatorio_totvs.xlsx"
+    # Exportação para o arquivo Excel
+    excel_file = "relatorio_totvs_com_invoices.xlsx"
     df.to_excel(excel_file, index=False, sheet_name="Relatorio")
-
     print(f"✅ Relatório gerado com sucesso: {excel_file} ({len(df)} registros)")

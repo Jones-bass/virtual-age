@@ -31,32 +31,30 @@ print("🚀 Consultando preços de produtos...")
 
 payload = {
     "filter": {
-        "change": {
-            "startDate": "2023-09-01T00:00:00Z",
-            "endDate": "2025-09-30T23:59:59Z",
-            "inBranchInfo": True,
-            "branchInfoCodeList": [1],
-        },
-     
+        "hasStock": True,
+        "branchStockCode": 2, #Empresa
+        "stockCode": 1,
+        
         "branchInfo": {
-            "branchCode": 1, 
+            "branchCode": 2, #Empresa
             "isActive": True,
             "isFinishedProduct": True
-            },
-    },
-        
+            }
+        },
     "option": {
         "prices": [
             {
-                "branchCode": 1,        
-                "priceCodeList": [1, 2]
+                "branchCode": 2,        
+                "priceCodeList": [1]
             }
         ],
     },
+    "page": 1,
+    "pageSize": 1000,
     "order": "productCode",
     "expand": "digitalPromotionPrices" 
 }
-
+        
 # === REQUISIÇÃO POST ===
 try:
     response = requests.post(URL, headers=headers, json=payload, timeout=60)

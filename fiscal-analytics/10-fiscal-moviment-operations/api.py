@@ -19,7 +19,7 @@ headers = {
 
 # === PAGINAÇÃO ===
 page = 1
-page_size = 500
+page_size = 100
 all_operations = []
 all_summaries = []
 

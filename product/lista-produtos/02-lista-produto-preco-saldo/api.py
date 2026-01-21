@@ -41,11 +41,11 @@ while True:
     payload = {
         "filter": {
             "hasStock": True,
-            "branchStockCode": 3, #Empresa
+            "branchStockCode": 2, #Empresa
             "stockCode": 1,
 
             "branchInfo": {
-                "branchCode": 3, #Empresa
+                "branchCode": 2, #Empresa
                 "isActive": True,
                 "isFinishedProduct": True
             }
@@ -53,7 +53,7 @@ while True:
         "option": {
             "balances": [
                 {
-                    "branchCode": 3, #Empresa
+                    "branchCode": 2, #Empresa
                     "stockCodeList": [1]
                 }
             ]

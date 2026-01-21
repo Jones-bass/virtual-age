@@ -19,7 +19,7 @@ headers = {
 
 # === PAGINAÇÃO ===
 page = 1  # Primeira página
-page_size = 100  # Tamanho da página
+page_size = 1000  # Tamanho da página
 all_movements = []  # Para armazenar todos os dados
 all_summaries = []  # Para armazenar os resumos das páginas
 
@@ -28,11 +28,10 @@ print("🚀 Iniciando consulta de Movimentos Fiscais (Analytics + DEBUG)...")
 while True:
     payload = {
           "filter": {
-            "branchCodeList": [5],  
+            "branchCodeList": [5], 
             
-            # === INTERVALO DE DATAS ===
-            "startMovementDate": "2025-12-01T00:00:00Z",
-            "endMovementDate": "2025-12-16T23:59:59Z",
+            "startMovementDate": "2026-01-01T00:00:00Z",
+            "endMovementDate": "2026-01-13T23:59:59Z",
         },
         "page": page,
         "pageSize": page_size,

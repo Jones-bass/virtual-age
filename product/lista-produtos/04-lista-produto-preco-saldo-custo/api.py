@@ -26,27 +26,29 @@ print("🚀 Consultando custos de produtos...")
 
 # === REQUEST BODY ===
 payload = {
-    "filter": {
-        "change": {
-            "startDate": "2025-09-01T00:00:00Z",
-            "endDate": "2025-09-30T23:59:59Z",
-            "inBranchInfo": True,
-            "branchInfoCodeList": [1],
+      "filter": {
+        "hasStock": True,
+        "branchStockCode": 2, #Empresa
+        "stockCode": 1,
+        
+        "branchInfo": {
+            "branchCode": 2, #Empresa
+            "isActive": True,
+            "isFinishedProduct": True
+            }
         },
-        "classifications": [
-                {"type": 104, "codeList": ["001","002","003","004","005","006"]}
-            ],
-        "branchInfo": {"branchCode": 1, "isActive": True},
-        },
-        "option": {
-            "costs": [
-                {
-                    "branchCode": 1,
-                    "costCodeList": [7]
-                }
-            ],
-        },
-    "order": "productCode"
+    "option": {
+        "costs": [
+            {
+                "branchCode": 2,        
+                "costCodeList": [7]
+            }
+        ],
+    },
+    "page": 1,
+    "pageSize": 1000,
+    "order": "productCode",
+    "expand": "digitalPromotionPrices" 
 }
 
 # === REQUISIÇÃO POST ===

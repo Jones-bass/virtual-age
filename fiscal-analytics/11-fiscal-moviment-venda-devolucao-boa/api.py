@@ -17,6 +17,7 @@ headers = {
     "Authorization": f"Bearer {TOKEN}"
 }
 
+##111, 112, 5101, 5102, 5103, 5111, 179, 601, 602, 504, 5104, 5106, 5961, 5962, 5974, 5975, 151, 551, 701, 7101, 702, 5105
 page = 1
 page_size = 1000
 all_sales = []
@@ -26,10 +27,10 @@ pagination_summary = []
 params = {
     # "BranchCnpj": "41791600000445", #Atacado
     # "BranchCnpj": "45877608000218",#CJ
-     "BranchCnpj": "45877608000137", #MG
-    # "BranchCnpj": "41791600000526",  # ECOM
-    "StartDate": "2025-12-01T00:00:00Z",
-    "EndDate": "2025-12-09T23:59:59Z",
+    # "BranchCnpj": "45877608000137", #MG
+     "BranchCnpj": "41791600000526",  # ECOM
+    "StartDate": "2025-01-01T00:00:00Z",
+    "EndDate": "2025-12-31T23:59:59Z",
     "pageSize": page_size
 }
 

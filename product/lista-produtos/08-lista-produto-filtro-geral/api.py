@@ -7,7 +7,7 @@ import os
 
 # === IMPORTA TOKEN DE AUTH ===
 # Assumindo que o path está correto
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
 from auth.config import TOKEN
 
 # === FUNÇÕES AUXILIARES ===
@@ -28,21 +28,17 @@ headers = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json
 
 # === PAYLOAD (mantido inalterado) ===
 payload = {
-    "filter": {
-        "change": {
-            "startDate": "2025-09-01T00:00:00Z",
-            "endDate": "2025-09-30T23:59:59Z",
-            "inBranchInfo": True,
-            "branchInfoCodeList": [1],
+       "filter": {
+        "hasStock": True,
+        "branchStockCode": 2, #Empresa
+        "stockCode": 1,
+        
+        "branchInfo": {
+            "branchCode": 2, #Empresa
+            "isActive": True,
+            "isFinishedProduct": True
+            }
         },
-        "classifications": [
-            {
-                "type": 104, 
-                "codeList": ["001","002","003","004","005","006"]
-                }
-        ],
-        "branchInfo": {"branchCode": 1, "isActive": True},
-    },
     # Adicionando 'expand' para garantir que os campos aninhados venham na resposta, se a API exigir
     "expand": "additionalColorInformation,barCodes,classifications,additionalFields,suppliers,manufacturers,referenceCategories,referenceCodeSequences,webData,details,branchesProductBlocked,conservationInstructions",
     "option": {"branchInfoCode": 1},

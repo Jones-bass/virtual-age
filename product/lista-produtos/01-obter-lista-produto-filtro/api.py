@@ -27,25 +27,29 @@ all_items = []
 
 # === PARÂMETROS DE CONSULTA ===
 payload_base = {
-    "filter": {
-        "change": {
-            "startDate": "2025-12-01T00:00:00Z",
-            "endDate": "2025-12-09T23:59:59Z",
-            "inBranchInfo": True,
-            "branchInfoCodeList": [1],  # 🔧 Pode adicionar mais filiais aqui
-        },
-        "branchInfo": {"branchCode": 1, "isActive": True},
-        "classifications": [
-            {
-                "type": 102,
-                "codeList": ["V000", "V001", "V002", "V003", "V004", "V005",
-                             "V006", "V007", "V008", "V009", "V010", "V011",
-                             "V012", "V013", "V014", "V015", "V016", "V017",
-                        ]
+        "filter": {
+            "hasStock": True,
+            "branchStockCode": 2, #Empresa
+            "stockCode": 1,
+
+            "branchInfo": {
+                "branchCode": 2, #Empresa
+                "isActive": True,
+                "isFinishedProduct": True
             }
-        ],
-    },
-    "order": "productCode",
+        },
+        "option": {
+            "balances": [
+                {
+                    "branchCode": 2, #Empresa
+                    "stockCodeList": [1]
+                }
+            ]
+        },
+        "page": 1,
+        "pageSize": 1000,
+        "order": "productCode",
+        "expand": "locations"
 }
 
 # === LOOP DE PAGINAÇÃO ===
