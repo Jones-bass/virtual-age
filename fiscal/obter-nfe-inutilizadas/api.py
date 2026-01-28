@@ -3,12 +3,13 @@ import pandas as pd
 import json
 from datetime import datetime
 import sys
-import os
 import time
 
-# === IMPORTA TOKEN DE AUTH ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/fiscal/v2/invoices/disable"

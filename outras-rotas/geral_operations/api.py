@@ -3,11 +3,12 @@ import pandas as pd
 import json
 import time
 from datetime import datetime
-import sys
+
+from dotenv import load_dotenv
 import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/general/v2/operations"
 

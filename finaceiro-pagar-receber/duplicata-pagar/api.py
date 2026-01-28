@@ -7,13 +7,12 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any
 
-# === IMPORTA TOKEN DE AUTH ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-try:
-    from auth.config import TOKEN
-except ImportError:
-    TOKEN = "YOUR_FALLBACK_TOKEN_HERE"
-    print("⚠️ Aviso: TOKEN não encontrado, usando fallback.")
+from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES ===
 BASE_URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/accounts-payable/v2"

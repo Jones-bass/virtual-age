@@ -1,13 +1,13 @@
 import requests
 import pandas as pd
 import json
-import sys
-import os
 from datetime import datetime
 
-# === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES DA API ===
 URL = "https://treino.bhan.com.br:9443/api/totvsmoda/analytics/v2/branch-fiscal-movement/search"

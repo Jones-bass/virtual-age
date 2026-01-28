@@ -1,4 +1,3 @@
-import os
 import sys
 import json
 import time
@@ -7,8 +6,11 @@ import pandas as pd
 from typing import Dict, Any, List
 from datetime import datetime
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # ================= CONFIGURAÇÕES =================
 

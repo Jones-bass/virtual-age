@@ -2,12 +2,12 @@ import requests
 from datetime import datetime, timezone
 import pandas as pd
 import json
-import sys
+
+from dotenv import load_dotenv
 import os
 
-# === CONFIGURAÇÕES DE PATH E TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES DA API ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/purchase-order/v2/search"  # 🔁 rota de compra

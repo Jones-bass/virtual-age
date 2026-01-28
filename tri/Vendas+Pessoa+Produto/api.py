@@ -1,14 +1,14 @@
-import os
-import sys
 from datetime import datetime
 from typing import Any, Dict, Iterable, List, Optional
 
 import pandas as pd
 import requests
 
-# === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from auth.config import TOKEN  # noqa: E402
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # =========================
 # CONFIG

@@ -3,11 +3,12 @@ import pandas as pd
 from datetime import datetime
 import json
 import sys
+
+from dotenv import load_dotenv
 import os
 
-# === IMPORTA TOKEN DE AUTH ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES DA API ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/financial-panel/v2/overdue-cards/search"

@@ -3,11 +3,12 @@ import pandas as pd
 import json   
 from datetime import datetime
 import sys
+
+from dotenv import load_dotenv
 import os
 
-# === IMPORTA TOKEN DE AUTH ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES ===
 branch_id = "45877608000137"  # Pode ser o código interno ou CNPJ da empresa

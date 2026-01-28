@@ -1,12 +1,13 @@
-import os, sys
 import json
 import requests
 import pandas as pd
 from datetime import datetime
 
-# === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 URL_SALES = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/branch-sale"
 URL_OPS   = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/operation-fiscal-movement/search"

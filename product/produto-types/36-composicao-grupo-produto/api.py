@@ -3,12 +3,12 @@ import pandas as pd
 import json
 from datetime import datetime
 import sys
+
+from dotenv import load_dotenv
 import os
 
-# === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-from auth.config import TOKEN
-
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === FUNÇÃO AUXILIAR ===
 def safe_list(value):

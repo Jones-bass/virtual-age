@@ -2,12 +2,13 @@ import requests
 import json
 from datetime import datetime
 import sys
-import os
 import base64
 
-# === IMPORTA TOKEN DE AUTH ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÕES ===
 ACCESS_KEY = "32251041791600000445550010000027241197481362"  # 👉 substitua pela chave de acesso da NF-e

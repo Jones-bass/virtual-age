@@ -1,13 +1,14 @@
 import requests
 import pandas as pd
 import json
-import sys
-import os
 from datetime import datetime
 
-# === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
+
 
 # === CONFIGURAÇÕES DA API ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/product-fiscal-movement/search"

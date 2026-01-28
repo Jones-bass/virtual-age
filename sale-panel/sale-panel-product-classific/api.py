@@ -2,12 +2,12 @@ import requests
 import pandas as pd
 from datetime import datetime, timezone
 import json
-import sys
+
+from dotenv import load_dotenv
 import os
 
-# === IMPORTA TOKEN ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
 # === CONFIGURAÇÃO DA API ===
 URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/sale-panel/v2/branch-ranking/search"

@@ -1,12 +1,12 @@
 import requests
 import json
-import sys
-import os
-import time
 
-# === IMPORTA TOKEN DE AUTH ===
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from auth.config import TOKEN
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
+
 
 # Definindo URL da API para criação de devolução
 create_url = "https://treino.bhan.com.br:9443/api/totvsmoda/general/v2/devolutions/create"
