@@ -1,165 +1,298 @@
+import sys
+import json
+import time
+import os
+import base64
+from pathlib import Path
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+
 import requests
 import pandas as pd
-import json
-import base64
-from datetime import datetime
-import sys
-import os
-from io import BytesIO
-from PIL import Image
-
 from dotenv import load_dotenv
-import os
+
+# ================= CONFIG =================
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
-# === CONFIGURAÇÕES ===
-#URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/image/v2/product/search"
-URL = "https://treino.bhan.com.br:9443/api/totvsmoda/image/v2/product/search"
+URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/image/v2/product/search"
 
-headers = {
+HEADERS = {
     "Authorization": f"Bearer {TOKEN}",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
 }
 
-print("🖼️ Consultando imagens dos produtos...")
+# Faixa de produtos (ajuste conforme sua realidade)
+PRODUCT_START = 1
+PRODUCT_END = 8000
 
-# === FUNÇÃO PARA OBTER PRODUTOS (por lote) ===
-def get_products(product_codes):
-    total_products = []
-    batch_size = 50  
-    for i in range(0, len(product_codes), batch_size):
-        batch_codes = product_codes[i:i+batch_size]
-        
-        payload = {
-            "filter": {
-                "productCodeList": batch_codes,
-                "typeImageCodeList": [1]
-            },
-            "option": {
-                "quantityImageResult": 1
-            },
-        }
+# Chunk/paginação
+CHUNK_SIZE = 500
+PAGE_SIZE = 100
+TIMEOUT = 120
 
-        # Faz a requisição
+# Filtros do endpoint (ajuste)
+TYPE_IMAGE_CODE_LIST = [1]  # ex.: [1]
+QTD_IMG_RESULT = 50         # quantityImageResult
+
+# Retry
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # base backoff
+
+# Exportação de imagens (TODAS EM UMA ÚNICA PASTA)
+IMG_DIR = Path("images-totvs")
+IMG_DIR.mkdir(parents=True, exist_ok=True)
+
+# ================= UTILS =================
+
+def log(msg: str) -> None:
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
+
+def chunked(lst: List[int], size: int):
+    for i in range(0, len(lst), size):
+        yield lst[i:i + size]
+
+def safe_int(v) -> Optional[int]:
+    try:
+        if v is None:
+            return None
+        return int(v)
+    except Exception:
+        return None
+
+def sanitize_filename(name: str) -> str:
+    """
+    Remove caracteres inválidos e limita tamanho.
+    """
+    if not name:
+        return ""
+    invalid = '<>:"/\\|?*\n\r\t'
+    out = "".join("_" if c in invalid else c for c in str(name))
+    out = out.strip().strip(".")
+    return out[:180]
+
+# ================= IMAGE SAVE =================
+
+def _strip_data_uri(b64: str) -> str:
+    if "," in b64:
+        return b64.split(",", 1)[1]
+    return b64
+
+def _guess_ext_from_data_uri(b64: str) -> str:
+    if b64.startswith("data:image/"):
+        head = b64.split(",", 1)[0].lower()
+        if "image/png" in head:
+            return ".png"
+        if "image/webp" in head:
+            return ".webp"
+        if "image/jpg" in head or "image/jpeg" in head:
+            return ".jpg"
+    return ".jpg"
+
+def save_image_from_base64_single_folder(
+    base64_str: str,
+    original_image_name: Optional[str],
+) -> str:
+    """
+    Salva imagem base64 em UMA ÚNICA PASTA (IMG_DIR) usando imageName como nome.
+    Se existir duplicado, cria _2, _3...
+    Retorna o caminho salvo.
+    """
+    if not base64_str:
+        return ""
+
+    try:
+        ext = _guess_ext_from_data_uri(base64_str)
+        raw_b64 = _strip_data_uri(base64_str)
+        image_bytes = base64.b64decode(raw_b64)
+
+        base_name = sanitize_filename(original_image_name or "")
+
+        # Se não vier nome, cria um nome baseado em timestamp
+        if not base_name:
+            base_name = f"image_{datetime.now():%Y%m%d_%H%M%S_%f}"
+
+        # garante extensão
+        if not Path(base_name).suffix:
+            file_name = f"{base_name}{ext}"
+        else:
+            file_name = base_name
+
+        file_path = IMG_DIR / file_name
+
+        # Se existir, cria variações _2, _3...
+        if file_path.exists():
+            stem = file_path.stem
+            suffix = file_path.suffix
+            n = 2
+            while True:
+                candidate = IMG_DIR / f"{stem}_{n}{suffix}"
+                if not candidate.exists():
+                    file_path = candidate
+                    break
+                n += 1
+
+        with open(file_path, "wb") as f:
+            f.write(image_bytes)
+
+        return str(file_path)
+
+    except Exception as e:
+        log(f"⚠️ Erro ao salvar imagem (imageName={original_image_name}): {e}")
+        return ""
+
+# ================= PAYLOAD =================
+
+def make_payload(product_codes: List[int], page: int, page_size: int) -> Dict[str, Any]:
+    return {
+        "filter": {
+            "productCodeList": product_codes,
+            "typeImageCodeList": TYPE_IMAGE_CODE_LIST,
+        },
+        "option": {
+            "quantityImageResult": QTD_IMG_RESULT
+        },
+        "page": page,
+        "pageSize": page_size
+    }
+
+# ================= HTTP =================
+
+def _post_with_retry(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    for attempt in range(1, MAX_RETRIES + 1):
         try:
-            response = requests.post(URL, headers=headers, json=payload, timeout=90)
+            log(f"   🔄 Tentativa {attempt}")
+            resp = requests.post(URL, headers=HEADERS, json=payload, timeout=TIMEOUT)
+            resp.raise_for_status()
+            return resp.json()
         except requests.exceptions.RequestException as e:
-            print(f"❌ Erro na conexão com a API: {e}")
-            sys.exit(1)
+            log(f"   ⚠️ Erro: {e}")
+            if attempt == MAX_RETRIES:
+                log("   ❌ Máximo de tentativas atingido.")
+                return None
+            sleep_time = RETRY_DELAY * attempt
+            log(f"   ⏳ Retry em {sleep_time}s...")
+            time.sleep(sleep_time)
+    return None
 
-        print(f"📡 Status HTTP: {response.status_code}")
-        if response.status_code != 200:
-            print("❌ Erro na resposta da API:")
-            print(response.text)
-            sys.exit(1)
+# ================= FETCH =================
 
-        # === TRATAMENTO DO JSON ===
-        try:
-            data = response.json()
-        except requests.exceptions.JSONDecodeError:
-            print("❌ Erro ao decodificar JSON da resposta.")
-            sys.exit(1)
+def fetch_all_product_images(product_codes: List[int]) -> List[Dict[str, Any]]:
+    all_items: List[Dict[str, Any]] = []
 
-        # === PROCESSA RESPOSTA ===
-        items = data.get("items", [])
-        if items:
-            total_products.extend(items)
+    log("🔎 Iniciando busca de imagens por produto")
 
-    return total_products
+    for chunk_index, product_chunk in enumerate(chunked(product_codes, CHUNK_SIZE), start=1):
+        log(f"📦 Chunk {chunk_index} | Produtos {product_chunk[0]} → {product_chunk[-1]}")
 
-# === INSERÇÃO DE PRODUTOS QUE VOCÊ QUER BUSCAR ===
-# Exemplo de como gerar a lista de produtos: de 1 até 999
-product_codes_to_search = list(range(1, 999))
+        page = 1
+        while True:
+            payload = make_payload(product_chunk, page, PAGE_SIZE)
+            log(f"   📄 Página {page}")
 
-# === OBTÉM OS PRODUTOS ===
-produtos_data = get_products(product_codes_to_search)
+            data = _post_with_retry(payload)
+            if not data:
+                log("   ⛔ Sem resposta válida. Pulando chunk/página.")
+                break
 
-# === SALVA DEBUG ===
-debug_file = f"debug_product_images_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-with open(debug_file, "w", encoding="utf-8") as f:
-    json.dump(produtos_data, f, ensure_ascii=False, indent=2)
-print(f"💾 Debug salvo em: {debug_file}")
+            items = data.get("items", []) or []
+            has_next = bool(data.get("hasNext", False))
 
-# === PROCESSA OS PRODUTOS E IMAGENS ===
-produtos = []
-imagens = []
+            if not items:
+                log("   ⛔ Página sem itens. Encerrando chunk.")
+                break
 
-# === CRIA PASTA DE IMAGENS ===
-img_dir = "images-totvs"
-os.makedirs(img_dir, exist_ok=True)
+            all_items.extend(items)
+            log(f"   ✅ Itens nesta página: {len(items)} | Total: {len(all_items)} | hasNext={has_next}")
 
-print("🧩 Processando e salvando imagens...")
+            if not has_next or len(items) < PAGE_SIZE:
+                log("   🏁 Encerrando chunk.")
+                break
 
-for item in produtos_data:
-    product_code = item.get("productCode")
+            page += 1
+            time.sleep(0.25)
 
-    produtos.append({
-        "productCode": product_code,
-        "productName": item.get("productName"),
-        "referencialCode": item.get("referencialCode"),
-        "colorName": item.get("colorName"),
-        "sizeName": item.get("sizeName")
-    })
+    log(f"✅ Total final de itens retornados: {len(all_items)}")
+    return all_items
 
-    for img in item.get("images", []):
-        image_code = img.get("imageCode")
-        image_base64 = img.get("imageFile")
+# ================= PROCESSAMENTO =================
 
-        image_filename = f"{product_code}_{image_code}.jpg"
-        image_path = os.path.join(img_dir, image_filename)
+def process_data_and_export_images(items: List[Dict[str, Any]]) -> Dict[str, pd.DataFrame]:
+    products_rows: List[Dict[str, Any]] = []
+    images_rows: List[Dict[str, Any]] = []
 
-        try:
-            if image_base64:
-                # Decodifica e salva imagem original
-                image_bytes = base64.b64decode(image_base64)
-                with open(image_path, "wb") as img_file:
-                    img_file.write(image_bytes)
+    log("🧩 Processando itens e exportando imagens (uma pasta única)...")
 
-                # Reduz imagem para miniatura (para Excel)
-                thumbnail_path = image_path.replace(".jpg", "_thumb.jpg")
-                image = Image.open(BytesIO(image_bytes))
-                image.thumbnail((80, 80))  # tamanho pequeno
-                image.save(thumbnail_path, "JPEG")
-            else:
-                thumbnail_path = None
-        except Exception as e:
-            print(f"⚠️ Erro ao salvar imagem {image_filename}: {e}")
-            thumbnail_path = None
+    for it in items:
+        product_code = safe_int(it.get("productCode")) or 0
+        product_name = it.get("productName")
+        images_list = it.get("images", []) or []
 
-        imagens.append({
+        products_rows.append({
             "productCode": product_code,
-            "imageCode": image_code,
-            "imageName": img.get("imageName"),
-            "imageDescription": img.get("imageDescription"),
-            "typeImageName": img.get("typeImageName"),
-            "imagePath": image_path,
-            "thumbnailPath": thumbnail_path
+            "productName": product_name,
+            "referencialGroupCode": it.get("referencialGroupCode"),
+            "referencialCode": it.get("referencialCode"),
+            "referencialName": it.get("referencialName"),
+            "colorCode": it.get("colorCode"),
+            "colorName": it.get("colorName"),
+            "sizeName": it.get("sizeName"),
+            "imagesCount": len(images_list),
         })
 
-# === CONVERTE PARA DATAFRAMES ===
-df_produtos = pd.DataFrame(produtos)
-df_imagens = pd.DataFrame(imagens)
+        for img in images_list:
+            original_name = img.get("imageName")
+            image_path = save_image_from_base64_single_folder(
+                base64_str=img.get("imageFile"),
+                original_image_name=original_name,
+            )
 
-# === EXPORTA PARA EXCEL COM IMAGENS ===
-excel_file = f"product_images_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
-    df_produtos.to_excel(writer, index=False, sheet_name="Produtos")
-    df_imagens.to_excel(writer, index=False, sheet_name="Imagens")
+            images_rows.append({
+                "productCode": product_code,
+                "productName": product_name,
+                "imageCode": safe_int(img.get("imageCode")),
+                "originalImageName": original_name,
+                "imageDescription": img.get("imageDescription"),
+                "typeImageCode": img.get("typeImageCode"),
+                "typeImageName": img.get("typeImageName"),
+                "imagePath": image_path,
+            })
 
-    workbook = writer.book
-    worksheet = writer.sheets["Imagens"]
+    return {
+        "Products": pd.DataFrame(products_rows),
+        "Images": pd.DataFrame(images_rows),
+    }
 
-    # Ajusta largura das colunas e insere miniaturas
-    worksheet.set_column("A:G", 25)
-    row = 1  # começa depois do cabeçalho
+# ================= MAIN =================
 
-    for thumb_path in df_imagens["thumbnailPath"]:
-        if thumb_path and os.path.exists(thumb_path):
-            worksheet.set_row(row, 80)  # altura maior para imagem
-            worksheet.insert_image(f"H{row+1}", thumb_path, {"x_scale": 1.2, "y_scale": 1.2})
-        row += 1
+if __name__ == "__main__":
+    if not TOKEN:
+        log("❌ TOKEN não encontrado no .env (variável TOKEN).")
+        sys.exit(1)
 
-print(f"✅ Relatório Excel gerado: {excel_file}")
-print(f"🗂️ Imagens salvas em: {os.path.abspath(img_dir)}")
+    log("🚀 Iniciando consulta /api/totvsmoda/image/v2/product/search")
+
+    product_codes = list(range(PRODUCT_START, PRODUCT_END + 1))
+    all_items = fetch_all_product_images(product_codes)
+
+    debug_file = f"debug_product_images_{datetime.now():%Y%m%d_%H%M%S}.json"
+    with open(debug_file, "w", encoding="utf-8") as f:
+        json.dump(all_items, f, ensure_ascii=False, indent=2)
+    log(f"💾 Debug salvo em: {debug_file}")
+
+    if not all_items:
+        log("⚠️ Nenhum item retornado.")
+        sys.exit(0)
+
+    dfs = process_data_and_export_images(all_items)
+
+    excel_file = f"product_images_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+    with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+        for name, df in dfs.items():
+            if not df.empty:
+                df.to_excel(writer, index=False, sheet_name=name)
+
+    log(f"✅ Excel gerado: {excel_file}")
+    log(f"📦 Products: {len(dfs['Products'])} | 🖼️ Images: {len(dfs['Images'])}")
+    log(f"🗂️ Imagens salvas em: {IMG_DIR.resolve()}")
