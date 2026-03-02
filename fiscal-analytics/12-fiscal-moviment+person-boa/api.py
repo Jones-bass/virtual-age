@@ -34,9 +34,9 @@ while True:
         "page": page,
         "pageSize": page_size,
         "filter": {
-            "branchCodeList": [5],  
-            "startMovementDate": "2025-10-01T00:00:00Z",
-            "endMovementDate": "2025-10-31T23:59:59Z",
+            "branchCodeList": [3],  
+            "startMovementDate": "2026-02-01T00:00:00Z",
+            "endMovementDate": "2026-02-28T23:59:59Z",
         }
     }
 

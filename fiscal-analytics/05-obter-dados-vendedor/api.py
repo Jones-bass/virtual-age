@@ -29,9 +29,9 @@ print("🚀 Iniciando consulta de Vendedores (Analytics + DEBUG)...")
 while True:
     payload = {
         "filter": {
-            "branchCodeList": [5],
-            "startMovementDate": "2025-12-01T00:00:00Z",
-            "endMovementDate": "2025-12-31T23:59:59Z",
+            "branchCodeList": [3],
+            "startMovementDate": "2026-02-01T00:00:00Z",
+            "endMovementDate": "2026-02-27T23:59:59Z",
         },
         "page": page,
         "pageSize": page_size,

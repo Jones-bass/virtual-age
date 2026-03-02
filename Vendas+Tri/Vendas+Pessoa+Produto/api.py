@@ -19,8 +19,8 @@ URL_PROD = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/product-
 
 BRANCH_CODE_LIST = [3]
 START = "2026-02-01T00:00:00Z"
-END = "2026-02-26T23:59:59Z"
-PAGE_SIZE = 500
+END = "2026-02-28T23:59:59Z"
+PAGE_SIZE = 1000
 
 # Produtos: filtro opcional (se não quiser, coloque None)
 CLASSIFICATION_TYPE_CODE_LIST = [102]
@@ -100,7 +100,7 @@ def paginate_post(
     url: str,
     filter_payload: Dict[str, Any],
     option_payload: Optional[Dict[str, Any]] = None,
-    page_size: int = 100,
+    page_size: int = 1000,
     timeout: int = 60,
 ) -> Iterable[Dict[str, Any]]:
     page = 1

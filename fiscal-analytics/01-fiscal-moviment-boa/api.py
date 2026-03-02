@@ -27,10 +27,10 @@ print("🚀 Iniciando consulta de Movimentos Fiscais (Analytics + DEBUG)...")
 while True:
     payload = {
           "filter": {
-            "branchCodeList": [5], 
+            "branchCodeList": [3], 
             
-            "startMovementDate": "2026-01-01T00:00:00Z",
-            "endMovementDate": "2026-01-13T23:59:59Z",
+            "startMovementDate": "2026-02-01T00:00:00Z",
+            "endMovementDate": "2026-02-28T23:59:59Z",
         },
         "page": page,
         "pageSize": page_size,
