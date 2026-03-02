@@ -21,7 +21,7 @@ HEADERS = {
 }
 
 # ==============================
-# FUNÇÃO DE LOG
+# LOG
 # ==============================
 
 def log(msg: str):
@@ -49,7 +49,7 @@ def make_payload(page: int = 1, pageSize: int = 100) -> Dict[str, Any]:
         "page": page,
         "pageSize": pageSize,
         "order": "invoiceCode",
-        "expand": "eletronic"
+        "expand": "items"  # Manter o expand com items para pegar os produtos
     }
 
 # ==============================
@@ -61,7 +61,7 @@ def fetch_all_invoices() -> List[Dict[str, Any]]:
     page = 1
     page_size = 100
 
-    log("🔎 Iniciando busca de notas fiscais (somente eletronic)...")
+    log("📦 Iniciando busca de notas fiscais (somente items)...")
 
     while True:
         payload = make_payload(page, page_size)
@@ -94,28 +94,33 @@ def fetch_all_invoices() -> List[Dict[str, Any]]:
     return all_items
 
 # ==============================
-# PROCESSA SOMENTE ELETRONIC
+# PROCESSA SOMENTE PRODUCTS
 # ==============================
 
-def process_eletronic(nf: Dict[str, Any]) -> Dict[str, Any]:
-    eletronic = nf.get("eletronic", {}) or {}
+def process_products(nf: Dict[str, Any]) -> List[Dict[str, Any]]:
+    processed = []
+    items = nf.get("items", []) or []
 
-    return {
-        "Empresa": nf.get("branchCode"),
-        "invoiceCode": nf.get("invoiceCode"),
-        "operationCode": nf.get("operationCode"),
-        "Serie": nf.get("serialCode"),
-        "IssueDate": nf.get("issueDate"),
-        "TotalValue": nf.get("totalValue"),
+    for item in items:
+        for product in item.get("products", []):
+            processed.append({
+                "Empresa": nf.get("branchCode"),
+                "invoiceCode": nf.get("invoiceCode"),
+                "SerialCode": nf.get("serialCode"),
+                "IssueDate": nf.get("issueDate"),
+                "ProductCode": product.get("productCode"),
+                "ProductName": product.get("productName"),
+                "DealerCode": product.get("dealerCode"),
+                "Quantity": product.get("quantity"),
+                "UnitGrossValue": product.get("unitGrossValue"),
+                "UnitDiscountValue": product.get("unitDiscountValue"),
+                "UnitNetValue": product.get("unitNetValue"),
+                "GrossValue": product.get("grossValue"),
+                "DiscountValue": product.get("discountValue"),
+                "NetValue": product.get("netValue"),
+            })
 
-        # Dados Eletrônicos
-        "AccessKey": eletronic.get("accessKey"),
-        "ElectronicStatus": eletronic.get("electronicInvoiceStatus"),
-        "Receipt": eletronic.get("receipt"),
-        "ReceivementDate": eletronic.get("receivementDate"),
-        "DisableProtocol": eletronic.get("disableProtocol"),
-        "DisableDate": eletronic.get("disableDate"),
-    }
+    return processed
 
 # ==============================
 # EXECUÇÃO PRINCIPAL
@@ -127,26 +132,26 @@ if __name__ == "__main__":
     items = fetch_all_invoices()
 
     # Debug JSON
-    debug_file = f"debug_eletronic_{datetime.now():%Y%m%d_%H%M%S}.json"
+    debug_file = f"debug_products_{datetime.now():%Y%m%d_%H%M%S}.json"
     with open(debug_file, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
 
     log(f"💾 Arquivo debug salvo: {debug_file}")
 
-    # Processa dados eletrônicos
-    eletronics = []
+    # Processa produtos
+    all_products_processed = []
+
     for nf in items:
         try:
-            eletronics.append(process_eletronic(nf))
+            all_products_processed.extend(process_products(nf))
         except Exception as e:
             log(f"⚠️ Erro ao processar invoice {nf.get('invoiceCode')}: {e}")
 
-    # Cria DataFrame
-    df_eletronic = pd.DataFrame(eletronics)
+    df_products = pd.DataFrame(all_products_processed)
 
     # Exporta Excel
-    excel_file = f"eletronic_invoices_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
-    df_eletronic.to_excel(excel_file, index=False)
+    excel_file = f"invoice_products_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+    df_products.to_excel(excel_file, index=False)
 
     log(f"✅ Excel gerado com sucesso: {excel_file}")
-    log(f"📊 Total de registros exportados: {len(df_eletronic)}")
+    log(f"📊 Total de produtos exportados: {len(df_products)}")
