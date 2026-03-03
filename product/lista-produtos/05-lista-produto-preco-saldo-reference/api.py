@@ -27,20 +27,18 @@ print("🚀 Consultando referências de produtos...")
 
 # === REQUEST BODY ===
 payload = {
-       "filter": {
+    "filter": {
         "hasStock": True,
-        "branchStockCode": 2, #Empresa
+        "branchStockCode": 2,  # Empresa
         "stockCode": 1,
-        
         "branchInfo": {
-            "branchCode": 2, #Empresa
+            "branchCode": 2,  # Empresa
             "isActive": True,
             "isFinishedProduct": True
-            }
-        },
+        }
+    },
     "option": {
         "branchInfoCode": 2,
-     
     },
     "page": 1,
     "pageSize": 1000,
