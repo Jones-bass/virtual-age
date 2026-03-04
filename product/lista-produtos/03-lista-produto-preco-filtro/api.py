@@ -3,14 +3,13 @@ import pandas as pd
 import json
 from datetime import datetime
 import sys
-
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
-# === FUNÇÕES AUXILIARES (ADICIONADAS PARA CORRIGIR O ERRO) ===
+# === FUNÇÕES AUXILIARES ===
 def safe_list(value):
     """Garante que o valor é uma lista ou retorna uma lista vazia."""
     return value if isinstance(value, list) else []
@@ -29,60 +28,70 @@ headers = {
 
 print("🚀 Consultando preços de produtos...")
 
-payload = {
-    "filter": {
-        "hasStock": True,
-        "branchStockCode": 2, #Empresa
-        "stockCode": 1,
-        
-        "branchInfo": {
-            "branchCode": 2, #Empresa
-            "isActive": True,
-            "isFinishedProduct": True
-            }
-        },
-    "option": {
-        "prices": [
-            {
-                "branchCode": 2,        
-                "priceCodeList": [1]
-            }
-        ],
-    },
-    "page": 1,
-    "pageSize": 1000,
-    "order": "productCode",
-    "expand": "digitalPromotionPrices" 
-}
-        
-# === REQUISIÇÃO POST ===
-try:
-    response = requests.post(URL, headers=headers, json=payload, timeout=60)
-except requests.exceptions.RequestException as e:
-    print(f"❌ Erro na conexão: {e}")
-    sys.exit(1)
+# === FUNÇÃO PARA PEGAR DADOS COM PAGINAÇÃO ===
+def get_all_data():
+    all_items = []
+    page = 1
+    while True:
+        # === REQUEST BODY ===
+        payload = {
+            "filter": {
+                "branchInfo": {
+                    "branchCode": 1,  # Empresa
+                    "isActive": True,
+                    "isFinishedProduct": True
+                }
+            },
+            "option": {
+                "prices": [
+                    {
+                        "branchCode": 1,        
+                        "priceCodeList": [2]
+                    }
+                ],
+            },
+            "order": "productCode",
+            "expand": "digitalPromotionPrices",
+            "page": page,
+            "size": 1000  # Tamanho da página, você pode ajustar o limite se necessário
+        }
 
-print(f"📡 Status HTTP: {response.status_code}")
-if response.status_code != 200:
-    print("❌ Erro na resposta da API:")
-    print(response.text)
-    sys.exit(1)
+        # === REQUISIÇÃO POST ===
+        try:
+            response = requests.post(URL, headers=headers, json=payload, timeout=60)
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Erro na conexão com a API: {e}")
+            sys.exit(1)
 
-# === TRATAMENTO DO JSON ===
-try:
-    data = response.json()
-except requests.exceptions.JSONDecodeError:
-    print("❌ Erro ao decodificar JSON da resposta.")
-    sys.exit(1)
+        print(f"📡 Status HTTP: {response.status_code}")
+        if response.status_code != 200:
+            print("❌ Erro na resposta da API:")
+            print(response.text)
+            sys.exit(1)
 
-# === SALVA DEBUG ===
-debug_file = f"debug_product_prices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-with open(debug_file, "w", encoding="utf-8") as f:
-    json.dump(data, f, ensure_ascii=False, indent=2)
-print(f"💾 Debug salvo em: {debug_file}")
+        # === TRATAMENTO DO JSON ===
+        try:
+            page_data = response.json()
+        except requests.exceptions.JSONDecodeError:
+            print("❌ Erro ao decodificar JSON da resposta.")
+            sys.exit(1)
 
-# === PROCESSA RESPOSTA ===
-items = data.get("items", [])
+        # Adiciona os itens da página atual
+        items = page_data.get("items", [])
+        all_items.extend(items)
+
+        # Verifica se há mais páginas
+        total_pages = page_data.get("totalPages", 0)
+        if page >= total_pages:
+            break
+
+        page += 1  # Avança para a próxima página
+
+    return all_items
+
+# === CONSULTA DE DADOS ===
+items = get_all_data()
+
 if not items:
     print("⚠️ Nenhum produto retornado pela API.")
     sys.exit(0)
@@ -168,13 +177,11 @@ for item in items:
                 "branchs": ", ".join(map(str, safe_list(outra_digital.get("branchs"))))
             })
 
-
 # === CONVERTE EM DATAFRAMES ===
 df_produtos = pd.DataFrame(produtos)
 df_precos = pd.DataFrame(precos)
 df_outras_promocoes = pd.DataFrame(outras_promocoes)
 df_promocoes_digitais = pd.DataFrame(promocoes_digitais)
-
 
 # === EXPORTA PARA EXCEL ===
 excel_file = f"product_prices_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"

@@ -38,7 +38,7 @@ def get_all_data():
             "expand": "classifications",
             "order": "maxChangeFilterDate",
             "page": page,
-            "size": 1000  # Pode ajustar o tamanho conforme necessário
+            "size": 1000 
         }
 
         # === REQUISIÇÃO POST ===
