@@ -9,7 +9,6 @@ import os
 # =====================================================
 # CONFIGURAÇÕES
 # =====================================================
-
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
@@ -23,30 +22,26 @@ HEADERS = {
 # =====================================================
 # LOG
 # =====================================================
-
 def log(msg: str):
     print(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
 # =====================================================
 # PAYLOAD
 # =====================================================
-
 def make_payload(page: int = 1, pageSize: int = 100) -> Dict[str, Any]:
     return {
         "filter": {
             "branchCodeList": [3, 5, 7],
             "origin": "All",
-            
             "operationCodeList": [
                 111, 112, 151, 551, 504, 505, 701, 702, 5100, 5101, 5102, 5103, 5104, 5105, 5106,
                 5111, 5551, 5953, 5961, 5962, 5965, 5974, 5975, 7101,
                 119, 120, 121, 171, 172, 173, 182, 183, 221, 222, 1201, 1202,
-                1204, 1207, 1208, 2200, 2116
+                1204, 1207, 1208, 2200, 2116, 2949
             ],
-
             "eletronicInvoiceStatusList": ["Authorized"],
-            "startIssueDate": "2026-02-01T00:00:00Z",
-            "endIssueDate": "2026-02-28T23:59:59Z"
+            "startIssueDate": "2024-08-01T00:00:00Z",
+            "endIssueDate": "2024-08-31T23:59:59Z"
         },
         "page": page,
         "pageSize": pageSize,
@@ -57,7 +52,6 @@ def make_payload(page: int = 1, pageSize: int = 100) -> Dict[str, Any]:
 # =====================================================
 # BUSCA PAGINADA
 # =====================================================
-
 def fetch_all_invoices() -> List[Dict[str, Any]]:
     all_items = []
     page = 1
@@ -67,7 +61,6 @@ def fetch_all_invoices() -> List[Dict[str, Any]]:
 
     while True:
         payload = make_payload(page, page_size)
-
         try:
             log(f"   - Buscando página {page}...")
             response = requests.post(URL, headers=HEADERS, json=payload, timeout=120)
@@ -75,17 +68,14 @@ def fetch_all_invoices() -> List[Dict[str, Any]]:
             data = response.json()
 
             items = data.get("items", [])
-
             if not items:
                 break
 
             all_items.extend(items)
-
             if len(items) < page_size:
                 break
 
             page += 1
-
         except requests.RequestException as e:
             log(f"❌ Erro na requisição: {e}")
             break
@@ -96,62 +86,90 @@ def fetch_all_invoices() -> List[Dict[str, Any]]:
 # =====================================================
 # PROCESSAMENTO DE PRODUCTS
 # =====================================================
-
 def process_products(nf: Dict[str, Any]) -> List[Dict[str, Any]]:
     processed = []
-    items = nf.get("items", []) or []
+    items = nf.get("items") or []
 
-    for item in items:
-        for product in item.get("products", []):
-            processed.append({
-                "Empresa": nf.get("branchCode"),
-                "invoiceCode": nf.get("invoiceCode"),
-                "SerialCode": nf.get("serialCode"),
-                "IssueDate": nf.get("issueDate"),
-                "ProductCode": product.get("productCode"),
-                "ProductName": product.get("productName"),
-                "DealerCode": product.get("dealerCode"),
-                "Quantity": product.get("quantity"),
-                "UnitGrossValue": product.get("unitGrossValue"),
-                "UnitDiscountValue": product.get("unitDiscountValue"),
-                "UnitNetValue": product.get("unitNetValue"),
-                "GrossValue": product.get("grossValue"),
-                "DiscountValue": product.get("discountValue"),
-                "NetValue": product.get("netValue"),
-            })
+    if not items:
+        # placeholder quando items é null
+        processed.append({
+            "Empresa": nf.get("branchCode"),
+            "branchCnpj": nf.get("branchCnpj"),
+            "invoiceCode": nf.get("invoiceCode"),
+            "invoiceSequence": nf.get("invoiceSequence"),
+            "SerialCode": nf.get("serialCode"),
+            "IssueDate": nf.get("issueDate"),
+            "ProductCode": None,
+            "ProductName": None,
+            "DealerCode": None,
+            "Quantity": None,
+            "UnitGrossValue": None,
+            "UnitDiscountValue": nf.get("discountPercentage"),
+            "UnitNetValue": nf.get("totalValue"),
+            "GrossValue": nf.get("productValue"),
+            "DiscountValue": nf.get("discountPercentage"),
+            "NetValue": nf.get("totalValue"),
+        })
+    else:
+        for item in items:
+            for product in item.get("products", []):
+                processed.append({
+                    "Empresa": nf.get("branchCode"),
+                    "branchCnpj": nf.get("branchCnpj"),
+                    "invoiceCode": nf.get("invoiceCode"),
+                    "invoiceSequence": nf.get("invoiceSequence"),
+                    "SerialCode": nf.get("serialCode"),
+                    "IssueDate": nf.get("issueDate"),
+                    "ProductCode": product.get("productCode"),
+                    "ProductName": product.get("productName"),
+                    "DealerCode": product.get("dealerCode"),
+                    "Quantity": product.get("quantity"),
+                    "UnitGrossValue": product.get("unitGrossValue"),
+                    "UnitDiscountValue": product.get("unitDiscountValue"),
+                    "UnitNetValue": product.get("unitNetValue"),
+                    "GrossValue": product.get("grossValue"),
+                    "DiscountValue": product.get("discountValue"),
+                    "NetValue": product.get("netValue"),
+                })
 
     return processed
 
 # =====================================================
-# PROCESSAMENTO
+# PROCESSAMENTO COMPLETO
 # =====================================================
-
 def process_all(items: List[Dict[str, Any]]):
-
-    eletronic_list = []
-    person_list = []
-    shipping_list = []
-    items_list = []
-    sales_list = []
-    payments_list = []
-    products_list = []
-    taxes_list = []
-    barcodes_list = []
-    rate_differential_list = []
-    observation_nf_list = []
-    referenced_tax_invoice_list = []
+    eletronic_list, person_list, shipping_list = [], [], []
+    items_list, sales_list, payments_list = [], [], []
+    products_list, taxes_list, barcodes_list = [], [], []
+    rate_differential_list, observation_nf_list, referenced_tax_invoice_list = [], [], []
 
     for nf in items:
-
-        # ================= ELETRONIC =================
-        eletronic = nf.get("eletronic", {}) or {}
+        # ELETRONIC
+        eletronic = nf.get("eletronic") or {}
         eletronic_list.append({
             "invoiceCode": nf.get("invoiceCode"),
             "Empresa": nf.get("branchCode"),
+            "branchCnpj": nf.get("branchCnpj"),
+            "invoiceSequence": nf.get("invoiceSequence"),
             "invoiceDate": nf.get("invoiceDate"),
             "operationCode": nf.get("operationCode"),
+            "operationType": nf.get("operationType"),
+            "operatioName": nf.get("operatioName"),
             "serie": nf.get("serialCode"),
+            "exitTime": nf.get("exitTime"),
+            "lastchangeDate": nf.get("lastchangeDate"),
             "totalValue": nf.get("totalValue"),
+            "discountPercentage": nf.get("discountPercentage"),
+            "productValue": nf.get("productValue"),
+            "additionalValue": nf.get("additionalValue"),
+            "shippingValue": nf.get("shippingValue"),
+            "insuranceValue": nf.get("insuranceValue"),
+            "ipiValue": nf.get("ipiValue"),
+            "baseIcmsValue": nf.get("baseIcmsValue"),
+            "icmsValue": nf.get("icmsValue"),
+            "icmsSubStValue": nf.get("icmsSubStValue"),
+            "terminalCode": nf.get("terminalCode"),
+            "sellerCpf": nf.get("sellerCpf"),
             "accessKey": eletronic.get("accessKey"),
             "electronicInvoiceStatus": eletronic.get("electronicInvoiceStatus"),
             "receipt": eletronic.get("receipt"),
@@ -160,11 +178,13 @@ def process_all(items: List[Dict[str, Any]]):
             "disableDate": eletronic.get("disableDate")
         })
 
-        # ================= PERSON =================
-        person = nf.get("person", {}) or {}
+        # PERSON
+        person = nf.get("person") or {}
         person_list.append({
             "Empresa": nf.get("branchCode"),
+            "branchCnpj": nf.get("branchCnpj"),
             "invoiceCode": nf.get("invoiceCode"),
+            "invoiceSequence": nf.get("invoiceSequence"),
             "Serie": nf.get("serialCode"),
             "IssueDate": nf.get("issueDate"),
             "PersonCode": person.get("personCode"),
@@ -182,14 +202,15 @@ def process_all(items: List[Dict[str, Any]]):
             "Cep": person.get("cep"),
         })
 
-        # ================= SHIPPING =================
-        shipping = nf.get("shippingCompany", {}) or {}
+        # SHIPPING
+        shipping = nf.get("shippingCompany") or {}
         shipping_list.append({
             "invoiceCode": nf.get("invoiceCode"),
             "Empresa": nf.get("branchCode"),
+            "branchCnpj": nf.get("branchCnpj"),
             "ShippingCompanyCode": shipping.get("shippingCompanyCode"),
             "ShippingCompanyName": shipping.get("shippingCompanyName"),
-            "FreightType": shipping.get("freitghtType"),
+            "FreightType": shipping.get("freightType"),
             "FreightValue": shipping.get("freightValue"),
             "CpfCnpj": shipping.get("cpfCnpj"),
             "City": shipping.get("cityName"),
@@ -201,8 +222,8 @@ def process_all(items: List[Dict[str, Any]]):
             "TrackingCode": shipping.get("trackingCode"),
         })
 
-        # ================= ITEMS =================
-        for item in nf.get("items", []) or []:
+        # ITEMS
+        for item in nf.get("items") or []:
             items_list.append({
                 "invoiceCode": nf.get("invoiceCode"),
                 "Empresa": nf.get("branchCode"),
@@ -223,8 +244,8 @@ def process_all(items: List[Dict[str, Any]]):
                 "AdditionalValue": item.get("additionalValue"),
             })
 
-        # ================= SALES ORDER =================
-        for so in nf.get("salesOrder", []) or []:
+        # SALES ORDER
+        for so in nf.get("salesOrder") or []:
             sales_list.append({
                 "invoiceCode": nf.get("invoiceCode"),
                 "Empresa": nf.get("branchCode"),
@@ -233,9 +254,9 @@ def process_all(items: List[Dict[str, Any]]):
                 "CustomerOrderCode": so.get("customerOrderCode"),
             })
 
-        # ================= PAYMENTS =================
-        for pg in nf.get("payments", []) or []:
-            card = pg.get("cardInformation", {}) or {}
+        # PAYMENTS
+        for pg in nf.get("payments") or []:
+            card = pg.get("cardInformation") or {}
             payments_list.append({
                 "invoiceCode": nf.get("invoiceCode"),
                 "Empresa": nf.get("branchCode"),
@@ -247,58 +268,8 @@ def process_all(items: List[Dict[str, Any]]):
                 "NSU": card.get("nsu"),
             })
 
-        # ================= PRODUCTS =================
-        products = process_products(nf)  # Processando os produtos de cada nota fiscal
-        products_list.extend(products)  # Adicionando os produtos processados à lista
-
-        # ================= TAXES =================
-        for tax in nf.get("taxes", []) or []:
-            taxes_list.append({
-                "invoiceCode": nf.get("invoiceCode"),
-                "Empresa": nf.get("branchCode"),
-                "TaxCode": tax.get("code"),
-                "TaxName": tax.get("name"),
-                "CST": tax.get("cst"),
-                "TaxPercentage": tax.get("taxPercentage"),
-                "TaxValue": tax.get("taxValue"),
-            })
-
-        # ================= BAR CODES =================
-        for barcode in nf.get("barCodes", []) or []:
-            barcodes_list.append({
-                "invoiceCode": nf.get("invoiceCode"),
-                "Empresa": nf.get("branchCode"),
-                "Barcode": barcode.get("barcode"),
-            })
-
-        # ================= RATE DIFFERENTIAL =================
-        rate_differential = nf.get("rateDifferential", {}) or {}
-        rate_differential_list.append({
-            "invoiceCode": nf.get("invoiceCode"),
-            "Empresa": nf.get("branchCode"),
-            "CalculationBaseValue": rate_differential.get("calculationBaseValue"),
-            "InternalRate": rate_differential.get("internalRate"),
-            "InterstateRate": rate_differential.get("interstateRate"),
-            "FCPRate": rate_differential.get("fcpRate"),
-            "FCPValue": rate_differential.get("fcpValue"),
-        })
-
-        # ================= OBSERVATION NF =================
-        for observation in nf.get("observationNF", []) or []:
-            observation_nf_list.append({
-                "invoiceCode": nf.get("invoiceCode"),
-                "Empresa": nf.get("branchCode"),
-                "Observation": observation.get("observation"),
-            })
-
-        # ================= REFERENCED TAX INVOICE =================
-        for ref_tax_invoice in nf.get("referencedTaxInvoice", []) or []:
-            referenced_tax_invoice_list.append({
-                "invoiceCode": nf.get("invoiceCode"),
-                "Empresa": nf.get("branchCode"),
-                "AccessKey": ref_tax_invoice.get("accessKey"),
-                "SATSerialCode": ref_tax_invoice.get("satSerialCode"),
-            })
+        # PRODUCTS
+        products_list.extend(process_products(nf))
 
     # Retorna todos os DataFrames
     return (
@@ -309,17 +280,11 @@ def process_all(items: List[Dict[str, Any]]):
         pd.DataFrame(sales_list),
         pd.DataFrame(payments_list),
         pd.DataFrame(products_list),
-        pd.DataFrame(taxes_list),
-        pd.DataFrame(barcodes_list),
-        pd.DataFrame(rate_differential_list),
-        pd.DataFrame(observation_nf_list),
-        pd.DataFrame(referenced_tax_invoice_list),
     )
 
 # =====================================================
 # EXECUÇÃO
 # =====================================================
-
 if __name__ == "__main__":
 
     invoices = fetch_all_invoices()
@@ -331,13 +296,8 @@ if __name__ == "__main__":
     dfs = process_all(invoices)
 
     excel_file = f"fiscal_full_etl_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
-
     with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
-        sheet_names = [
-            "Eletronic", "Person", "Shipping", "Items", "SalesOrder", "Payments", 
-            "Products", "Taxes", "Barcodes", "RateDifferential", "ObservationNF", "ReferencedTaxInvoice"
-        ]
-
+        sheet_names = ["Eletronic", "Person", "Shipping", "Items", "SalesOrder", "Payments", "Products"]
         for df, name in zip(dfs, sheet_names):
             df.to_excel(writer, index=False, sheet_name=name)
 

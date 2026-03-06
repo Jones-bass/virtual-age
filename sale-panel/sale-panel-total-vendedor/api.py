@@ -17,9 +17,9 @@ HEADERS = {
 }
 
 payload = {
-    "branchs": [3],
-    "datemin": "2025-09-01T00:00:00Z",
-    "datemax": "2025-09-30T23:59:59Z"
+    "branchs": [2,3,5,7],
+    "datemin": "2024-09-01T00:00:00Z",
+    "datemax": "2026-03-05T23:59:59Z"
 }
 
 # === REQUISIÇÃO ===
