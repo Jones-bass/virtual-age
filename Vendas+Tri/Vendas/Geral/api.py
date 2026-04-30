@@ -31,17 +31,17 @@ def log(msg: str):
 def make_payload(page: int = 1, pageSize: int = 100) -> Dict[str, Any]:
     return {
         "filter": {
-            "branchCodeList": [3, 5, 7],
+            "branchCodeList": [3, 5, 7, 9],
             "origin": "All",
             "operationCodeList": [
                 111, 112, 151, 551, 504, 505, 701, 702, 5100, 5101, 5102, 5103, 5104, 5105, 5106,
-                5111, 5551, 5953, 5961, 5962, 5965, 5974, 5975, 7101,
+                5108, 5109, 5111, 5551, 5953, 5961, 5962, 5965, 5974, 5975, 7101,
                 119, 120, 121, 171, 172, 173, 182, 183, 221, 222, 1201, 1202,
                 1204, 1207, 1208, 2200, 2116, 2949
             ],
             "eletronicInvoiceStatusList": ["Authorized"],
-            "startIssueDate": "2024-08-01T00:00:00Z",
-            "endIssueDate": "2024-08-31T23:59:59Z"
+            "startIssueDate": "2026-04-01T00:00:00Z",
+            "endIssueDate": "2026-04-27T23:59:59Z"
         },
         "page": page,
         "pageSize": pageSize,

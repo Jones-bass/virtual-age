@@ -17,9 +17,9 @@ URL_MOV = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/fiscal-mo
 URL_PEO = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/person-fiscal-movement/search"
 URL_PROD = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/product-fiscal-movement/search"
 
-BRANCH_CODE_LIST = [3]
-START = "2026-02-01T00:00:00Z"
-END = "2026-02-28T23:59:59Z"
+BRANCH_CODE_LIST = [2]
+START = "2025-12-01T00:00:00Z"
+END = "2025-12-31T23:59:59Z"
 PAGE_SIZE = 1000
 
 # Produtos: filtro opcional (se não quiser, coloque None)

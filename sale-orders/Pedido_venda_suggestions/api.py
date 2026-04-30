@@ -21,10 +21,10 @@ headers = {
 # === PARÂMETROS DE CONSULTA ===
 PARAMS = {
     "BranchCode": 2,  # Empresa
-    "SuggestionCode": 1282,  # Se quiser buscar uma sugestão específica
-    "StartSuggestionDate": "2025-10-01T00:00:00Z",
-    "EndSuggestionDate": "2025-11-03T23:59:59Z",
-    "SuggestionStatusList": ["InProgress", "Closed"],  # Pode incluir "Canceled"
+    "SuggestionCode": 55288,  # Se quiser buscar uma sugestão específica
+    "StartSuggestionDate": "2026-03-18T00:00:00Z",
+    "EndSuggestionDate": "2026-03-18T23:59:59Z",
+    "SuggestionStatusList": ["InProgress", "Closed", "Canceled"],  # Pode incluir "Canceled"
     "Order": "-branchCode,suggestionCode",
     "Expand": "items"
 }

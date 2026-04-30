@@ -34,6 +34,9 @@ def get_all_data():
             "filter": {},
             "option": {
                 "branchInfoCode": 1,
+                "isActive": True,
+                "isFinishedProduct": True
+         
             },
             "expand": "classifications",
             "order": "maxChangeFilterDate",

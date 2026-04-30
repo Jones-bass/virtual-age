@@ -27,10 +27,10 @@ print("🚀 Iniciando consulta de Movimentos Fiscais (Analytics + DEBUG)...")
 while True:
     payload = {
           "filter": {
-            "branchCodeList": [3], 
+            "branchCodeList": [2], 
             
-            "startMovementDate": "2026-02-01T00:00:00Z",
-            "endMovementDate": "2026-02-28T23:59:59Z",
+            "startMovementDate": "2025-12-01T00:00:00Z",
+            "endMovementDate": "2025-12-31T23:59:59Z",
         },
         "page": page,
         "pageSize": page_size,
@@ -65,6 +65,7 @@ while True:
     for item in items:
         all_movements.append({
             "BranchCode": item.get("branchCode"),
+            "invoiceCode": item.get("invoiceCode"),
             "ProductCode": item.get("productCode"),
             "PersonCode": item.get("personCode"),
             "RepresentativeCode": item.get("representativeCode"),
