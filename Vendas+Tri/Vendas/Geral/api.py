@@ -31,6 +31,10 @@ def log(msg: str):
 def make_payload(page: int = 1, pageSize: int = 100) -> Dict[str, Any]:
     return {
         "filter": {
+            # "change": {
+            #    "startDate": "2026-04-01T00:00:00.643Z",
+            #    "endDate": "2026-04-30T23:59:59.643Z"
+            #    },
             "branchCodeList": [3, 5, 7, 9],
             "origin": "All",
             "operationCodeList": [

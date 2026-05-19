@@ -1,40 +1,125 @@
-^XA
-^CI28
-^MD30
-^PR1
-^PW400
-^LL760
-^LH0,0
+import requests
+import pandas as pd
+import json
+from datetime import datetime
 
-^FO40,20^A0N,55,45^FB320,1,0,C,0^FDLA GEA^FS
-^FO95,75^A0N,18,18^FB210,1,0,C,0^FDSUNNY COUTURE^FS
+from dotenv import load_dotenv
+import os
 
-^FO40,115^A0N,30,30^FB320,1,0,C,0^FDTECIDO/FABRIC:^FS
-^FO41,115^A0N,30,30^FB320,1,0,C,0^FDTECIDO/FABRIC:^FS
-^FO40,150^A0N,28,24^FB320,2,2,C,0^FD@329#60#@\&^FS
+load_dotenv()
+TOKEN = os.getenv("TOKEN")
 
-^FO40,215^A0N,30,30^FB320,1,0,C,0^FDFORRO/LINING:^FS
-^FO41,215^A0N,30,30^FB320,1,0,C,0^FDFORRO/LINING:^FS
-^FO40,250^A0N,28,24^FB320,2,2,C,0^FD@334#40#@\&^FS
+# === CONFIGURAÇÕES DA API ===
+URL = "https://apitotvsmoda.bhan.com.br/api/totvsmoda/analytics/v2/operation-fiscal-movement/search"
 
-^FO40,315^A0N,30,30^FB320,1,0,C,0^FDRENDA/GUIPIR:^FS
-^FO41,315^A0N,30,30^FB320,1,0,C,0^FDRENDA/GUIPIR:^FS
-^FO40,350^A0N,28,24^FB320,2,2,C,0^FD@339#40#@\&^FS
+headers = {
+    "Authorization": f"Bearer {TOKEN}",
+    "Content-Type": "application/json"
+}
 
-^FO40,445^A0N,55,55^FB320,1,0,C,0^FD@110#8#@^FS
-^FO40,505^A0N,30,30^FB320,1,0,C,0^FD41.791.600/0001-00^FS
-^FO41,505^A0N,30,30^FB320,1,0,C,0^FD41.791.600/0001-00^FS
+# === PAGINAÇÃO ===
+page = 1
+page_size = 100
+all_operations = []
+all_summaries = []
 
-^FO40,550^A0N,28,24^FB320,1,0,C,0^FDINDUSTRIA BRASILEIRA^FS
-^FO40,585^A0N,30,28^FB320,1,0,C,0^FDMADE IN BRAZIL^FS
-^FO41,585^A0N,30,28^FB320,1,0,C,0^FDMADE IN BRAZIL^FS
+print("🚀 Iniciando consulta de Operações (Analytics + DEBUG)...")
 
-^FO75,635^XGR:8,1,1^FS
-^FO125,635^XGR:2,1,1^FS
-^FO175,635^XGR:5,1,1^FS
-^FO225,635^XGR:10,1,1^FS
+while True:
+    payload = {
+        "filter": {
+            "branchCodeList": [2],
+            "startMovementDate": "2026-01-01T00:00:00Z",
+            "endMovementDate": "2026-01-31T00:00:00Z",
+        },
+        "page": page,
+        "pageSize": page_size,
+    }
 
-^FO110,685^XGR:4,1,1^FS
-^FO180,685^XGR:3,1,1^FS
+    print(f"\n📄 Consultando página {page} de operações…")
+    resp = requests.post(URL, headers=headers, json=payload)
+    print(f"📡 Status: {resp.status_code}")
 
-^XZ
+    if resp.status_code != 200:
+        print("❌ Erro na requisição:", resp.text)
+        break
+
+    try:
+        data = resp.json()
+    except requests.exceptions.JSONDecodeError:
+        print("❌ Erro ao decodificar JSON da resposta.")
+        break
+
+    # === DEBUG: SALVAR RESPOSTA ===
+    debug_file = f"debug_response_operations_page_{page}.json"
+    with open(debug_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print(f"💾 Resposta salva em: {debug_file}")
+
+    # === DEBUG: EXIBIR ESTRUTURA ===
+    print("🔍 Estrutura da resposta:")
+    for key, value in data.items():
+        tipo = type(value).__name__
+        tam = len(value) if isinstance(value, (list, dict)) else "1"
+        print(f"   - {key}: {tipo} ({tam})")
+
+    print("🧩 Amostra (primeiros 1000 caracteres):")
+    print(json.dumps(data, indent=2, ensure_ascii=False)[:1000])
+    print("-" * 60)
+
+    # === PROCESSAMENTO DE DADOS ===
+    items = data.get("items", [])
+    if not items:
+        print("⚠️ Nenhum registro encontrado nesta página.")
+        break
+
+    for item in items:
+        all_operations.append({
+            "Codigo": item.get("code"),
+            "Nome": item.get("name"),
+            "Modelo": item.get("model"),
+        })
+
+    summary = {
+        "Page": page,
+        "Count": data.get("count"),
+        "TotalItems": data.get("totalItems"),
+        "TotalPages": data.get("totalPages"),
+    }
+    all_summaries.append(summary)
+
+    # === PAGINAÇÃO ===
+    total_pages = data.get("totalPages")
+    has_next = data.get("hasNext", False)
+
+    if total_pages and page >= total_pages:
+        print("✅ Todas as páginas foram processadas.")
+        break
+    elif not has_next or len(items) < page_size:
+        print("✅ Última página (sem próxima).")
+        break
+
+    page += 1
+
+# === EXPORTAÇÃO ===
+df_operations = pd.DataFrame(all_operations)
+df_summary = pd.DataFrame(all_summaries).drop_duplicates(subset=["Page"])
+
+print("-" * 40)
+
+if df_operations.empty:
+    print("⚠️ Nenhum dado encontrado para exportar.")
+else:
+    date_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    excel_file = f"operacoes_{date_now}.xlsx"
+
+    try:
+        with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
+            df_operations.to_excel(writer, sheet_name="Operacoes", index=False)
+            if not df_summary.empty:
+                df_summary.to_excel(writer, sheet_name="ResumoPaginas", index=False)
+
+        print(f"✅ Relatório gerado: {excel_file}")
+        print(f"Total de registros exportados: {len(df_operations)}")
+    except Exception as e:
+        print(f"❌ Erro ao exportar para Excel: {e}")

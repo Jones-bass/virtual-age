@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
@@ -16,112 +17,125 @@ headers = {
     "Content-Type": "application/json"
 }
 
-# === PAGINAÇÃO ===
-page = 1  # Primeira página
-page_size = 1000  # Tamanho da página
-all_movements = []  # Para armazenar todos os dados
-all_summaries = []  # Para armazenar os resumos das páginas
+# === FILTROS ===
+branch_codes = [2]  # Se a API aceitar todos com [0], você pode testar [0]
+start_date = "2026-01-01T00:00:00Z"
+end_date = "2026-01-31T23:59:59Z"
 
-print("🚀 Iniciando consulta de Movimentos Fiscais (Analytics + DEBUG)...")
+# === PAGINAÇÃO ===
+page = 1
+page_size = 1000
+
+all_items = []
+all_summaries = []
+
+print("🚀 Iniciando consulta de Movimentos Fiscais...")
 
 while True:
     payload = {
-          "filter": {
-            "branchCodeList": [2], 
-            
-            "startMovementDate": "2025-12-01T00:00:00Z",
-            "endMovementDate": "2025-12-31T23:59:59Z",
+        "filter": {
+            "branchCodeList": branch_codes,
+            "startMovementDate": start_date,
+            "endMovementDate": end_date
         },
         "page": page,
-        "pageSize": page_size,
+        "pageSize": page_size
     }
 
-    print(f"\n📄 Consultando página {page + 1} de movimentos fiscais…")
-    resp = requests.post(URL, headers=headers, json=payload)
+    print(f"\n📄 Consultando página {page}...")
+
+    try:
+        resp = requests.post(URL, headers=headers, json=payload, timeout=60)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Erro de conexão: {e}")
+        break
+
     print(f"📡 Status: {resp.status_code}")
 
     if resp.status_code != 200:
-        print("❌ Erro na requisição:", resp.text)
+        print("❌ Erro na requisição:")
+        print(resp.text)
         break
 
     try:
         data = resp.json()
     except requests.exceptions.JSONDecodeError:
         print("❌ Erro ao decodificar JSON da resposta.")
+        print(resp.text)
         break
 
-    # === DEBUG: SALVAR RESPOSTA ===
-    debug_file = f"debug_response_fiscal_movement_page_{page + 1}.json"
+    # === DEBUG: SALVAR RESPOSTA COMPLETA ===
+    debug_file = f"debug_response_fiscal_movement_page_{page}.json"
     with open(debug_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
     print(f"💾 Resposta salva em: {debug_file}")
 
-    # === PROCESSAMENTO DE DADOS ===
     items = data.get("items", [])
+
+    summary = {
+        "Page": page,
+        "Count": data.get("count"),
+        "TotalItems": data.get("totalItems"),
+        "TotalPages": data.get("totalPages"),
+        "HasNext": data.get("hasNext"),
+        "ItemsNaPagina": len(items)
+    }
+
+    all_summaries.append(summary)
+
     if not items:
         print("⚠️ Nenhum registro encontrado nesta página.")
         break
 
-    for item in items:
-        all_movements.append({
-            "BranchCode": item.get("branchCode"),
-            "invoiceCode": item.get("invoiceCode"),
-            "ProductCode": item.get("productCode"),
-            "PersonCode": item.get("personCode"),
-            "RepresentativeCode": item.get("representativeCode"),
-            "MovementDate": item.get("movementDate"),
-            "OperationCode": item.get("operationCode"),
-            "OperationModel": item.get("operationModel"),
-            "StockCode": item.get("stockCode"),
-            "BuyerCode": item.get("buyerCode"),
-            "SellerCode": item.get("sellerCode"),
-            "GrossValue": item.get("grossValue"),
-            "DiscountValue": item.get("discountValue"),
-            "NetValue": item.get("netValue"),
-            "Quantity": item.get("quantity"),
-        })
+    # Aqui traz TODOS os campos retornados pela API
+    all_items.extend(items)
 
-    # Resumo da página
-    summary = {
-        "Page": page + 1,
-        "Count": data.get("count"),
-        "TotalItems": data.get("totalItems"),
-        "TotalPages": data.get("totalPages"),
-    }
-    all_summaries.append(summary)
+    print(f"✅ Registros coletados nesta página: {len(items)}")
+    print(f"📦 Total acumulado: {len(all_items)}")
 
-    # === PAGINAÇÃO ===
-    total_pages = data.get("totalPages")
     has_next = data.get("hasNext", False)
+    total_pages = data.get("totalPages")
 
-    if total_pages and page >= total_pages - 1:
-        print("✅ Todas as páginas foram processadas.")
+    # Regra principal de parada
+    if not has_next:
+        print("✅ Última página encontrada pelo hasNext.")
         break
-    elif not has_next or len(items) < page_size:
-        print("✅ Última página (sem próxima).")
+
+    # Regra extra de segurança
+    if total_pages is not None and total_pages > 0 and page >= total_pages - 1:
+        print("✅ Todas as páginas processadas pelo totalPages.")
         break
 
     page += 1
 
-# === EXPORTAÇÃO ===
-df_movements = pd.DataFrame(all_movements)
-df_summary = pd.DataFrame(all_summaries).drop_duplicates(subset=["Page"])
+    # Pequena pausa para não bater forte na API
+    time.sleep(0.2)
 
+# === EXPORTAÇÃO ===
 print("-" * 40)
 
-if df_movements.empty:
+if not all_items:
     print("⚠️ Nenhum dado encontrado para exportar.")
 else:
+    df_movements = pd.json_normalize(all_items)
+    df_summary = pd.DataFrame(all_summaries)
+
     date_now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     excel_file = f"movimentos_fiscais_{date_now}.xlsx"
 
     try:
         with pd.ExcelWriter(excel_file, engine="xlsxwriter") as writer:
             df_movements.to_excel(writer, sheet_name="Movimentos Fiscais", index=False)
-            if not df_summary.empty:
-                df_summary.to_excel(writer, sheet_name="ResumoPáginas", index=False)
+            df_summary.to_excel(writer, sheet_name="ResumoPaginas", index=False)
 
         print(f"✅ Relatório gerado: {excel_file}")
         print(f"Total de registros exportados: {len(df_movements)}")
+        print(f"Total de colunas exportadas: {len(df_movements.columns)}")
+
+        print("\n📌 Colunas retornadas pela API:")
+        for col in df_movements.columns:
+            print(f"- {col}")
+
     except Exception as e:
         print(f"❌ Erro ao exportar para Excel: {e}")

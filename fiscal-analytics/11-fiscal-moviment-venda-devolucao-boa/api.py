@@ -25,13 +25,12 @@ pagination_summary = []
 
 # === PARÂMETROS ===
 params = {
-    # "BranchCnpj": "41791600000445", #Atacado
+     "BranchCnpj": "41791600000445", #Atacado
     # "BranchCnpj": "45877608000218",#CJ
     # "BranchCnpj": "45877608000137", #MG
-     "BranchCnpj": "41791600000445",  # ECOM
-    "StartDate": "2025-12-01T00:00:00Z",
-    "EndDate": "2025-12-31T23:59:59Z",
-    "pageSize": page_size
+    # "BranchCnpj": "41791600000445",  # ECOM
+    "StartDate": "2025-11-25T00:00:00Z",
+    "EndDate": "2025-11-30T23:59:59Z",
 }
 
 print("\n🚀 Iniciando consulta de Branch Sales com DEBUG...\n")
@@ -85,14 +84,14 @@ while True:
 
     for item in items:
         all_sales.append({
-            "CNPJ Filial": item.get("branchCnpj"),
-            "Sequência NF": item.get("invoiceSequence"),
-            "Valor Venda": item.get("SaleValue"),
-            "Data Venda": item.get("saleDate"),
-            "Hora Venda": item.get("SaleHour"),
-            "Status NF": item.get("invoiceStatus"),
+            "Empresa": item.get("branchCnpj"),
+            "invoiceSequence": item.get("invoiceSequence"),
+            "SaleValue": item.get("SaleValue"),
+            "saleDate": item.get("saleDate"),
+            "SaleHour": item.get("SaleHour"),
+            "invoiceStatus": item.get("invoiceStatus"),
             "Tipo Operação": item.get("operationType"),
-            "Código Operação": item.get("operationCode"),
+            "operationCode": item.get("operationCode"),
         })
 
     # === RESUMO DE PAGINAÇÃO ===
