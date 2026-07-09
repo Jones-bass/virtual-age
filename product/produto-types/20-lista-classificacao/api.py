@@ -21,8 +21,8 @@ headers = {
 # === PARÂMETROS ===
 params = {
     "startChangeDate": "2024-01-01T00:00:00Z",
-    "endChangeDate": "2025-10-28T23:59:59Z",
-    "typeCodeList": [102],  # exemplo: listar tipos de classificação específicos
+    "endChangeDate": "2026-06-16T23:59:59Z",
+    "typeCodeList": [102, 103],  # exemplo: listar tipos de classificação específicos
 }
 
 print("🚀 Consultando classificações de produtos...")
